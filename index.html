@@ -11,8 +11,8 @@
         body { font-family: 'Kanit', sans-serif; background-color: #f8fafc; }
         .glass-card { background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px); }
         .green-gradient { background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%); }
+        .blue-gradient { background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); }
         
-        /* Modal Styles */
         .modal-overlay {
             position: fixed;
             top: 0;
@@ -43,11 +43,16 @@
             transform: scale(1) translateY(0);
         }
 
-        /* Floating Button Style */
-        .fab {
+        .fab-group {
             position: fixed;
             bottom: 30px;
             right: 30px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            z-index: 1000;
+        }
+        .fab {
             width: 60px;
             height: 60px;
             border-radius: 50%;
@@ -55,11 +60,10 @@
             align-items: center;
             justify-content: center;
             color: white;
-            box-shadow: 0 10px 25px rgba(34, 197, 94, 0.4);
-            z-index: 1000;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
             transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
         }
-        .fab:hover { transform: scale(1.1) rotate(90deg); }
+        .fab:hover { transform: scale(1.1); }
         
         .fab-tooltip {
             position: absolute;
@@ -82,19 +86,96 @@
 </head>
 <body class="min-h-screen pb-20">
 
-    <!-- Header -->
     <header class="green-gradient text-white py-8 shadow-lg mb-8">
         <div class="container mx-auto px-4 text-center">
             <h1 class="text-3xl font-bold mb-1">🌿 Trading Journal</h1>
-            <p class="text-sm opacity-80 uppercase tracking-widest">บันทึกการเทรดเพื่อเป็น Pro Trader</p>
+            <p class="text-sm opacity-80 uppercase tracking-widest">บันทึกการเทรดและคำนวณความเสี่ยง</p>
         </div>
     </header>
 
-    <!-- Floating Action Button -->
-    <button id="openFormBtn" onclick="toggleForm(true)" class="fab green-gradient hover:shadow-2xl active:scale-90 group">
-        <span class="text-3xl">＋</span>
-        <span class="fab-tooltip">เพิ่มบันทึกการเทรด</span>
-    </button>
+    <div class="fab-group">
+        <button onclick="toggleCalc(true)" class="fab blue-gradient hover:shadow-blue-500/40 group">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path></svg>
+            <span class="fab-tooltip">เครื่องคิดเลข Lot Size (Point)</span>
+        </button>
+        <button id="openFormBtn" onclick="toggleForm(true)" class="fab green-gradient hover:shadow-green-500/40 group">
+            <span class="text-3xl">＋</span>
+            <span class="fab-tooltip">เพิ่มบันทึกการเทรด</span>
+        </button>
+    </div>
+
+    <!-- Lot Size Calculator Modal -->
+    <div id="calcOverlay" class="modal-overlay" onclick="handleCalcOverlayClick(event)">
+        <div class="modal-container w-full max-w-md px-4">
+            <div class="glass-card rounded-3xl p-6 shadow-2xl border border-white">
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="text-xl font-bold text-slate-800 flex items-center">
+                        <span class="bg-blue-100 p-2 rounded-xl mr-3 text-xl">🧮</span> Lot Calculator
+                    </h2>
+                    <button onclick="toggleCalc(false)" class="p-2 hover:bg-slate-100 rounded-full transition text-slate-400">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                    </button>
+                </div>
+                
+                <div class="space-y-4">
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">เงินทุน ($)</label>
+                            <input type="number" id="calcBalance" value="10000" class="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-blue-500 outline-none transition">
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">ความเสี่ยง (%)</label>
+                            <input type="number" id="calcRisk" value="1" class="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-blue-500 outline-none transition">
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">ฝั่ง (B/S)</label>
+                            <select id="calcSide" class="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-blue-500 outline-none transition bg-white font-bold">
+                                <option value="BUY">BUY / LONG</option>
+                                <option value="SELL">SELL / SHORT</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">ราคาเข้า (Entry)</label>
+                            <input type="number" step="any" id="calcEntry" value="0.00" class="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-blue-500 outline-none transition">
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">ระยะ SL (Points)</label>
+                            <input type="number" id="calcSLPoints" value="500" class="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-blue-500 outline-none transition">
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Reward Ratio (RR)</label>
+                            <input type="number" step="0.1" id="calcRR" value="1.0" class="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-blue-500 outline-none transition">
+                        </div>
+                    </div>
+                    
+                    <div class="bg-blue-600 p-6 rounded-2xl text-center shadow-lg shadow-blue-200 mb-2">
+                        <p class="text-[10px] font-bold text-blue-100 uppercase mb-1">Lot Size (สูตร: เสี่ยง/ระยะทาง)</p>
+                        <p id="resultLot" class="text-5xl font-bold text-white">0.02</p>
+                        <p id="resultRiskAmount" class="text-xs text-blue-100 mt-2 opacity-80">เสี่ยงเงิน: $10.00</p>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-3">
+                        <div class="bg-red-50 p-3 rounded-xl border border-red-100">
+                            <p class="text-[10px] font-bold text-red-400 uppercase mb-1">ราคา Stop Loss</p>
+                            <p id="resultSLPrice" class="text-lg font-bold text-red-600">-</p>
+                        </div>
+                        <div class="bg-green-50 p-3 rounded-xl border border-green-100">
+                            <p class="text-[10px] font-bold text-green-400 uppercase mb-1">ราคา Take Profit</p>
+                            <p id="resultTPPrice" class="text-lg font-bold text-green-600">-</p>
+                        </div>
+                    </div>
+
+                    <p class="text-[9px] text-slate-400 text-center italic">* คำนวณแบบ: (เงินทุน * %ความเสี่ยง) / ระยะ SL Points</p>
+                </div>
+            </div>
+        </div>
+    </div>
 
     <!-- Modal Form Popup -->
     <div id="modalOverlay" class="modal-overlay" onclick="handleOverlayClick(event)">
@@ -104,7 +185,7 @@
                     <h2 id="formTitle" class="text-xl font-bold text-slate-800 flex items-center">
                         <span class="bg-green-100 p-2 rounded-xl mr-3 text-xl">📝</span> บันทึกเทรดใหม่
                     </h2>
-                    <button onclick="toggleForm(false)" class="p-2 hover:bg-slate-100 rounded-full transition text-slate-400 hover:text-slate-600">
+                    <button onclick="toggleForm(false)" class="p-2 hover:bg-slate-100 rounded-full transition text-slate-400">
                         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
                     </button>
                 </div>
@@ -113,28 +194,29 @@
                     <div class="grid grid-cols-2 gap-4">
                         <div class="col-span-2">
                             <label class="block text-xs font-bold text-slate-400 uppercase mb-1">วันที่/เวลา</label>
-                            <input type="datetime-local" id="datetime" required class="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-green-500 focus:ring-4 focus:ring-green-500/10 outline-none transition">
+                            <input type="datetime-local" id="datetime" required class="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-green-500 outline-none transition">
                         </div>
                         <div>
                             <label class="block text-xs font-bold text-slate-400 uppercase mb-1">สินทรัพย์</label>
-                            <input type="text" id="asset" placeholder="Gold" required class="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-green-500 focus:ring-4 focus:ring-green-500/10 outline-none transition">
+                            <input type="text" id="asset" placeholder="XAUUSD" required class="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-green-500 outline-none transition">
                         </div>
                         <div>
                             <label class="block text-xs font-bold text-slate-400 uppercase mb-1">ประเภท</label>
-                            <select id="type" class="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-green-500 focus:ring-4 focus:ring-green-500/10 outline-none transition appearance-none bg-white">
+                            <select id="type" class="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-green-500 outline-none transition bg-white">
                                 <option value="Buy/Long">Buy / Long</option>
                                 <option value="Sell/Short">Sell / Short</option>
                             </select>
                         </div>
                         <div>
-                            <label class="block text-xs font-bold text-slate-400 uppercase mb-1">ราคาที่ตั้ง</label>
-                            <input type="number" step="any" id="price" placeholder="0.00" required class="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-green-500 focus:ring-4 focus:ring-green-500/10 outline-none transition">
+                            <label class="block text-xs font-bold text-slate-400 uppercase mb-1">ราคาเข้า</label>
+                            <input type="number" step="any" id="price" placeholder="0.00" required class="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-green-500 outline-none transition">
                         </div>
                         <div>
                             <label class="block text-xs font-bold text-slate-400 uppercase mb-1">สถานะ</label>
-                            <select id="status" class="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-green-500 focus:ring-4 focus:ring-green-500/10 outline-none transition appearance-none bg-white">
+                            <select id="status" class="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-green-500 outline-none transition bg-white">
                                 <option value="Pending">รอ (Pending)</option>
-                                <option value="Active">✅ กันทุน/ติดออเดอร์</option>
+                                <option value="Running">🔵 ติดออเดอร์</option>
+                                <option value="BreakEven">🛡️ กันทุน (ปิดแล้ว)</option>
                                 <option value="TP">💸 Take Profit</option>
                                 <option value="SL">🛑 Stop Loss</option>
                                 <option value="Canceled">✖️ Canceled</option>
@@ -144,34 +226,29 @@
 
                     <div>
                         <label class="block text-xs font-bold text-slate-400 uppercase mb-1">สาเหตุ/Setup</label>
-                        <textarea id="setup" rows="2" placeholder="อย่าลืมเช็ค Trend + Zone" class="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-green-500 focus:ring-4 focus:ring-green-500/10 outline-none transition"></textarea>
+                        <textarea id="setup" rows="2" placeholder="จดบันทึกเหตุผลที่เข้าเทรด..." class="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-green-500 outline-none transition"></textarea>
                     </div>
 
                     <div class="grid grid-cols-2 gap-4">
-                        <div class="col-span-1">
+                        <div>
                             <label class="block text-xs font-bold text-slate-400 uppercase mb-1">อารมณ์</label>
-                            <select id="emotion" class="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-green-500 focus:ring-4 focus:ring-green-500/10 outline-none transition appearance-none bg-white">
+                            <select id="emotion" class="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-green-500 outline-none transition bg-white">
                                 <option value="🧘 นิ่งตามแผน">🧘 นิ่งตามแผน</option>
                                 <option value="😤 เสียดาย">😤 เสียดาย</option>
                                 <option value="😨 กลัว">😨 กลัว</option>
                                 <option value="🤑 โลภ">🤑 โลภ</option>
                             </select>
                         </div>
-                        <div class="col-span-1">
-                            <label class="block text-xs font-bold text-slate-400 uppercase mb-1">Reference ID</label>
-                            <input type="text" id="displayId" readonly class="w-full px-4 py-3 rounded-xl border-none bg-slate-50 text-slate-400 text-xs font-mono italic outline-none" placeholder="Auto-ID">
+                        <div>
+                            <label class="block text-xs font-bold text-slate-400 uppercase mb-1">ID</label>
+                            <input type="text" id="displayId" readonly class="w-full px-4 py-3 rounded-xl border-none bg-slate-50 text-slate-400 text-xs font-mono italic outline-none">
                             <input type="hidden" id="editId">
                         </div>
                     </div>
 
-                    <div>
-                        <label class="block text-xs font-bold text-slate-400 uppercase mb-1">Link รูปภาพ Chart</label>
-                        <input type="url" id="imgUrl" placeholder="https://..." class="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-green-500 focus:ring-4 focus:ring-green-500/10 outline-none transition">
-                    </div>
-
                     <div class="pt-4 flex gap-3">
                         <button type="submit" id="submitBtn" class="flex-1 green-gradient text-white font-bold py-4 rounded-2xl shadow-lg hover:shadow-green-500/30 transition transform active:scale-95">บันทึกข้อมูล</button>
-                        <button type="button" onclick="toggleForm(false)" class="px-6 bg-slate-100 text-slate-600 font-bold py-4 rounded-2xl hover:bg-slate-200 transition">ปิด</button>
+                        <button type="button" onclick="toggleForm(false)" class="px-6 bg-slate-100 text-slate-600 font-bold py-4 rounded-2xl hover:bg-slate-200 transition">ยกเลิก</button>
                     </div>
                 </form>
             </div>
@@ -179,58 +256,26 @@
     </div>
 
     <main class="container mx-auto px-4 max-w-4xl">
-        
-        <!-- Trading Summary Section -->
-        <div id="summarySection" class="grid grid-cols-2 md:grid-cols-6 gap-2 mb-8">
+        <div id="summarySection" class="grid grid-cols-2 md:grid-cols-7 gap-2 mb-8">
             <div class="bg-white p-3 rounded-2xl shadow-sm border border-slate-100 text-center">
-                <p class="text-[9px] font-bold text-slate-400 uppercase mb-1">เทรดทั้งหมด</p>
+                <p class="text-[9px] font-bold text-slate-400 uppercase mb-1">ทั้งหมด</p>
                 <p id="totalTrades" class="text-xl font-bold text-slate-800">0</p>
             </div>
-            <div class="bg-white p-3 rounded-2xl shadow-sm border border-slate-100 text-center">
-                <p class="text-[9px] font-bold text-amber-500 uppercase mb-1">รอ</p>
-                <p id="pendingTrades" class="text-xl font-bold text-amber-600">0</p>
-            </div>
-            <div class="bg-white p-3 rounded-2xl shadow-sm border border-slate-100 text-center">
-                <p class="text-[9px] font-bold text-green-500 uppercase mb-1">TP</p>
-                <p id="tpTrades" class="text-xl font-bold text-green-600">0</p>
-            </div>
-            <div class="bg-white p-3 rounded-2xl shadow-sm border border-slate-100 text-center">
-                <p class="text-[9px] font-bold text-red-400 uppercase mb-1">SL</p>
-                <p id="slTrades" class="text-xl font-bold text-red-500">0</p>
-            </div>
-            <div class="bg-white p-3 rounded-2xl shadow-sm border border-slate-100 text-center">
-                <p class="text-[9px] font-bold text-blue-400 uppercase mb-1">กันทุน</p>
-                <p id="activeTrades" class="text-xl font-bold text-blue-500">0</p>
-            </div>
-            <div class="bg-white p-3 rounded-2xl shadow-sm border border-slate-100 text-center">
-                <p class="text-[9px] font-bold text-slate-300 uppercase mb-1">ยกเลิก</p>
-                <p id="canceledTrades" class="text-xl font-bold text-slate-400">0</p>
-            </div>
-        </div>
-
-        <!-- History List Section -->
-        <div class="flex justify-between items-center mb-6">
-            <h2 class="text-2xl font-bold text-slate-800 flex items-center">
-                <span class="mr-3">📊</span> ประวัติการเทรด
-            </h2>
-            <button onclick="fetchData()" class="bg-white border border-slate-200 text-slate-600 px-4 py-2 rounded-xl hover:bg-slate-50 transition text-sm flex items-center shadow-sm">
-                <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
-                รีเฟรช
-            </button>
+            <div class="bg-white p-3 rounded-2xl shadow-sm border border-slate-100 text-center text-amber-600"><p class="text-[9px] uppercase mb-1">รอ</p><p id="pendingTrades" class="text-xl font-bold">0</p></div>
+            <div class="bg-white p-3 rounded-2xl shadow-sm border border-slate-100 text-center text-blue-600"><p class="text-[9px] uppercase mb-1">ถือ</p><p id="runningTrades" class="text-xl font-bold">0</p></div>
+            <div class="bg-white p-3 rounded-2xl shadow-sm border border-slate-100 text-center text-green-600"><p class="text-[9px] uppercase mb-1">TP</p><p id="tpTrades" class="text-xl font-bold">0</p></div>
+            <div class="bg-white p-3 rounded-2xl shadow-sm border border-slate-100 text-center text-red-500"><p class="text-[9px] uppercase mb-1">SL</p><p id="slTrades" class="text-xl font-bold">0</p></div>
+            <div class="bg-white p-3 rounded-2xl shadow-sm border border-slate-100 text-center text-indigo-500"><p class="text-[9px] uppercase mb-1">กันทุน</p><p id="beTrades" class="text-xl font-bold">0</p></div>
+            <div class="bg-white p-3 rounded-2xl shadow-sm border border-slate-100 text-center text-slate-400"><p class="text-[9px] uppercase mb-1">ยกเลิก</p><p id="canceledTrades" class="text-xl font-bold">0</p></div>
         </div>
 
         <div id="loading" class="hidden text-center py-20">
             <div class="inline-block animate-spin rounded-full h-10 w-10 border-4 border-green-500 border-t-transparent"></div>
-            <p class="mt-4 text-slate-500 font-medium">กำลังเชื่อมต่อข้อมูล...</p>
         </div>
 
-        <div id="noData" class="bg-white rounded-3xl p-20 text-center text-slate-400 border-2 border-dashed border-slate-200">
-            <p class="text-lg">ยังไม่มีข้อมูลบันทึกใน Journal ของคุณ</p>
-            <p class="text-sm mt-2">กดปุ่ม + เพื่อเริ่มบันทึกไม้แรกกัน!</p>
-        </div>
-
-        <div id="journalContainer" class="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <!-- Cards will be injected here -->
+        <div id="journalContainer" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
+        <div id="noData" class="hidden bg-white rounded-3xl p-20 text-center text-slate-400 border border-dashed border-slate-200">
+            <p>ยังไม่มีบันทึกข้อมูล</p>
         </div>
     </main>
 
@@ -240,6 +285,60 @@
         const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyiMkG0IhEinTvNlfFs6MntNrEGvRVkajcSdmxWaxgxjbSkYzrpXnG3tVl9cmOrxjld/exec"; 
         let currentData = [];
 
+        // --- Updated Calculator Logic ---
+        function toggleCalc(show) {
+            const overlay = document.getElementById('calcOverlay');
+            if (show) {
+                overlay.classList.add('active');
+                calculateLot();
+            } else {
+                overlay.classList.remove('active');
+            }
+        }
+
+        function handleCalcOverlayClick(e) {
+            if (e.target.id === 'calcOverlay') toggleCalc(false);
+        }
+
+        function calculateLot() {
+            const balance = parseFloat(document.getElementById('calcBalance').value) || 0;
+            const riskPercent = parseFloat(document.getElementById('calcRisk').value) || 0;
+            const entryPrice = parseFloat(document.getElementById('calcEntry').value) || 0;
+            const slPoints = parseFloat(document.getElementById('calcSLPoints').value) || 0;
+            const rr = parseFloat(document.getElementById('calcRR').value) || 1;
+            const side = document.getElementById('calcSide').value;
+
+            if (balance <= 0 || slPoints <= 0) {
+                document.getElementById('resultLot').textContent = "0.00";
+                document.getElementById('resultSLPrice').textContent = "-";
+                document.getElementById('resultTPPrice').textContent = "-";
+                return;
+            }
+
+            // สูตร: (เงินทุน * ความเสี่ยง) / ระยะขาดทุน
+            const riskAmount = balance * (riskPercent / 100);
+            const lot = riskAmount / slPoints;
+            
+            // คำนวณราคาเป้าหมาย (Assume 100 points = 1.00 unit for price calc)
+            const priceMoveSL = slPoints / 100;
+            const priceMoveTP = (slPoints * rr) / 100;
+
+            let slPrice, tpPrice;
+            if (side === 'BUY') {
+                slPrice = entryPrice - priceMoveSL;
+                tpPrice = entryPrice + priceMoveTP;
+            } else {
+                slPrice = entryPrice + priceMoveSL;
+                tpPrice = entryPrice - priceMoveTP;
+            }
+
+            document.getElementById('resultLot').textContent = lot.toFixed(2);
+            document.getElementById('resultRiskAmount').textContent = `เสี่ยงเงิน: $${riskAmount.toLocaleString(undefined, {minimumFractionDigits: 2})}`;
+            document.getElementById('resultSLPrice').textContent = slPrice.toFixed(2);
+            document.getElementById('resultTPPrice').textContent = tpPrice.toFixed(2);
+        }
+
+        // --- Journal Logic ---
         function toggleForm(show) {
             const overlay = document.getElementById('modalOverlay');
             if (show) {
@@ -247,7 +346,7 @@
                 if (!document.getElementById('editId').value) {
                     document.getElementById('displayId').value = generateCustomId(currentData);
                     const now = new Date();
-                    const tzoffset = (now).getTimezoneOffset() * 60000;
+                    const tzoffset = now.getTimezoneOffset() * 60000;
                     document.getElementById('datetime').value = (new Date(now - tzoffset)).toISOString().slice(0, 16);
                 }
             } else {
@@ -270,10 +369,7 @@
 
         function generateCustomId(data) {
             const now = new Date();
-            const yyyy = now.getFullYear();
-            const mm = String(now.getMonth() + 1).padStart(2, '0');
-            const dd = String(now.getDate()).padStart(2, '0');
-            const todayPrefix = `${yyyy}${mm}${dd}`;
+            const todayPrefix = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}`;
             const todayEntries = data.filter(item => item.id && item.id.toString().startsWith(todayPrefix));
             let nextNum = 1;
             if (todayEntries.length > 0) {
@@ -302,25 +398,18 @@
                 }
             } catch (error) {
                 document.getElementById('loading').classList.add('hidden');
-                document.getElementById('noData').classList.remove('hidden');
-                showToast('โหลดข้อมูลล้มเหลว', 'bg-red-500');
+                showToast('การเชื่อมต่อล้มเหลว', 'bg-red-500');
             }
         }
 
         function updateSummary(data) {
-            const total = data.length;
-            const pending = data.filter(i => i.status === 'Pending').length;
-            const tp = data.filter(i => i.status === 'TP').length;
-            const sl = data.filter(i => i.status === 'SL').length;
-            const active = data.filter(i => i.status === 'Active').length;
-            const canceled = data.filter(i => i.status === 'Canceled').length;
-
-            document.getElementById('totalTrades').textContent = total;
-            document.getElementById('pendingTrades').textContent = pending;
-            document.getElementById('tpTrades').textContent = tp;
-            document.getElementById('slTrades').textContent = sl;
-            document.getElementById('activeTrades').textContent = active;
-            document.getElementById('canceledTrades').textContent = canceled;
+            document.getElementById('totalTrades').textContent = data.length;
+            document.getElementById('pendingTrades').textContent = data.filter(i => i.status === 'Pending').length;
+            document.getElementById('runningTrades').textContent = data.filter(i => i.status === 'Running').length;
+            document.getElementById('tpTrades').textContent = data.filter(i => i.status === 'TP').length;
+            document.getElementById('slTrades').textContent = data.filter(i => i.status === 'SL').length;
+            document.getElementById('beTrades').textContent = data.filter(i => i.status === 'BreakEven').length;
+            document.getElementById('canceledTrades').textContent = data.filter(i => i.status === 'Canceled').length;
         }
 
         function renderJournal(items) {
@@ -329,8 +418,8 @@
             [...items].reverse().forEach((item) => {
                 const statusColors = {
                     'TP': 'bg-green-100 text-green-700', 'SL': 'bg-red-100 text-red-700',
-                    'Pending': 'bg-amber-100 text-amber-700', 'Active': 'bg-blue-100 text-blue-700',
-                    'Canceled': 'bg-slate-100 text-slate-700'
+                    'Pending': 'bg-amber-100 text-amber-700', 'Running': 'bg-blue-100 text-blue-700',
+                    'BreakEven': 'bg-indigo-100 text-indigo-700', 'Canceled': 'bg-slate-100 text-slate-700'
                 };
                 const card = document.createElement('div');
                 card.className = 'bg-white rounded-3xl p-5 shadow-sm border border-slate-100 hover:shadow-md transition';
@@ -343,33 +432,19 @@
                             </div>
                             <h3 class="font-bold text-lg text-slate-800">${item.asset} <span class="text-xs font-normal text-slate-400 ml-1">${item.type}</span></h3>
                         </div>
-                        <div class="text-right">
-                             <p class="text-[10px] text-slate-400">${new Date(item.datetime).toLocaleDateString('th-TH')}</p>
-                             <p class="text-[10px] text-slate-400 font-bold">${new Date(item.datetime).toLocaleTimeString('th-TH', {hour:'2-digit', minute:'2-digit'})}</p>
+                        <div class="text-right text-[10px] text-slate-400">
+                             <p>${new Date(item.datetime).toLocaleDateString('th-TH')}</p>
+                             <p class="font-bold">${new Date(item.datetime).toLocaleTimeString('th-TH', {hour:'2-digit', minute:'2-digit'})}</p>
                         </div>
                     </div>
-                    <div class="grid grid-cols-2 gap-4 bg-slate-50 p-3 rounded-2xl mb-4">
-                        <div>
-                            <p class="text-[10px] text-slate-400 uppercase font-bold">Entry Price</p>
-                            <p class="font-bold text-slate-700">${item.price ? parseFloat(item.price).toLocaleString() : '0'}</p>
-                        </div>
-                        <div>
-                            <p class="text-[10px] text-slate-400 uppercase font-bold">Emotion</p>
-                            <p class="font-bold text-slate-700">${item.emotion || '-'}</p>
-                        </div>
+                    <div class="bg-slate-50 p-3 rounded-2xl mb-3 grid grid-cols-2 gap-2">
+                        <div><p class="text-[9px] text-slate-400 uppercase">ราคาเข้า</p><p class="font-bold text-slate-700">${item.price}</p></div>
+                        <div><p class="text-[9px] text-slate-400 uppercase">อารมณ์</p><p class="font-bold text-slate-700">${item.emotion}</p></div>
                     </div>
-                    <div class="mb-4">
-                        <p class="text-[11px] text-slate-400 font-bold mb-1">SETUP / PLAN:</p>
-                        <p class="text-sm text-slate-600 line-clamp-2 italic">"${item.setup || '-'}"</p>
-                    </div>
-                    ${item.imgUrl ? `
-                        <div class="mb-4 rounded-2xl overflow-hidden border border-slate-100">
-                            <img src="${item.imgUrl}" alt="Chart" class="w-full h-32 object-cover" onerror="this.parentElement.style.display='none'">
-                        </div>
-                    ` : ''}
-                    <div class="flex gap-2 border-t border-slate-50 pt-3">
-                        <button onclick="prepareEdit('${item.id}')" class="flex-1 py-2 rounded-xl text-xs font-bold text-blue-600 bg-blue-50 hover:bg-blue-100 transition">แก้ไข</button>
-                        <button onclick="deleteEntry('${item.id}')" class="flex-1 py-2 rounded-xl text-xs font-bold text-red-400 hover:text-red-600 hover:bg-red-50 transition">ลบ</button>
+                    <p class="text-sm text-slate-600 line-clamp-2 italic mb-4">"${item.setup || '-'}"</p>
+                    <div class="flex gap-2 pt-2 border-t border-slate-50">
+                        <button onclick="prepareEdit('${item.id}')" class="flex-1 py-2 rounded-xl text-xs font-bold text-blue-600 bg-blue-50">แก้ไข</button>
+                        <button onclick="deleteEntry('${item.id}')" class="flex-1 py-2 rounded-xl text-xs font-bold text-red-400 hover:bg-red-50">ลบ</button>
                     </div>
                 `;
                 container.appendChild(card);
@@ -382,49 +457,43 @@
             toggleForm(true);
             document.getElementById('editId').value = item.id;
             document.getElementById('displayId').value = item.id;
-            if (item.datetime) {
-                const date = new Date(item.datetime);
-                const tzoffset = (new Date()).getTimezoneOffset() * 60000;
-                document.getElementById('datetime').value = (new Date(date - tzoffset)).toISOString().slice(0, 16);
-            }
-            document.getElementById('asset').value = item.asset || '';
-            document.getElementById('type').value = item.type || 'Buy/Long';
-            document.getElementById('price').value = item.price || '';
-            document.getElementById('setup').value = item.setup || '';
-            document.getElementById('status').value = item.status || 'Pending';
-            document.getElementById('emotion').value = item.emotion || 'Normal';
-            document.getElementById('imgUrl').value = item.imgUrl || '';
+            const date = new Date(item.datetime);
+            const tzoffset = date.getTimezoneOffset() * 60000;
+            document.getElementById('datetime').value = (new Date(date - tzoffset)).toISOString().slice(0, 16);
+            document.getElementById('asset').value = item.asset;
+            document.getElementById('type').value = item.type;
+            document.getElementById('price').value = item.price;
+            document.getElementById('setup').value = item.setup;
+            document.getElementById('status').value = item.status;
+            document.getElementById('emotion').value = item.emotion;
             document.getElementById('formTitle').innerHTML = '<span class="bg-blue-100 p-2 rounded-xl mr-3 text-xl">✏️</span> แก้ไขรายการ';
             document.getElementById('submitBtn').textContent = 'อัปเดตข้อมูล';
         }
 
-        const form = document.getElementById('journalForm');
-        form.onsubmit = async (e) => {
+        document.getElementById('journalForm').onsubmit = async (e) => {
             e.preventDefault();
             const editId = document.getElementById('editId').value;
-            const finalId = editId || document.getElementById('displayId').value; 
-            const action = editId ? 'update' : 'create';
             const payload = {
-                action: action, id: finalId,
+                action: editId ? 'update' : 'create', 
+                id: editId || document.getElementById('displayId').value,
                 datetime: document.getElementById('datetime').value,
                 asset: document.getElementById('asset').value,
                 type: document.getElementById('type').value,
                 price: document.getElementById('price').value,
                 setup: document.getElementById('setup').value,
                 status: document.getElementById('status').value,
-                emotion: document.getElementById('emotion').value,
-                imgUrl: document.getElementById('imgUrl').value
+                emotion: document.getElementById('emotion').value
             };
             const btn = document.getElementById('submitBtn');
             btn.disabled = true;
-            btn.innerHTML = `<span class="animate-spin inline-block mr-2">⏳</span> กำลังบันทึก...`;
+            btn.innerHTML = `<span class="animate-spin inline-block mr-2">⏳</span> กำลังส่ง...`;
             try {
                 await fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify(payload) });
-                showToast(action === 'update' ? 'แก้ไขข้อมูลสำเร็จ!' : 'บันทึกข้อมูลแล้ว!', 'bg-green-600');
+                showToast('สำเร็จ!', 'bg-green-600');
                 toggleForm(false);
                 fetchData();
             } catch (error) {
-                showToast('เกิดข้อผิดพลาด', 'bg-red-500');
+                showToast('ล้มเหลว', 'bg-red-500');
             } finally {
                 btn.disabled = false;
                 btn.textContent = editId ? 'อัปเดตข้อมูล' : 'บันทึกข้อมูล';
@@ -432,10 +501,10 @@
         };
 
         async function deleteEntry(id) {
-            if (!confirm(`ยืนยันการลบรายการ ID: ${id}?`)) return;
+            if (!confirm(`ลบรายการ ID: ${id}?`)) return;
             try {
                 await fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify({ action: 'delete', id: id }) });
-                showToast('ลบข้อมูลเรียบร้อย', 'bg-slate-700');
+                showToast('ลบแล้ว', 'bg-slate-700');
                 fetchData();
             } catch (error) {
                 showToast('ลบไม่สำเร็จ', 'bg-red-500');
@@ -443,12 +512,16 @@
         }
 
         function resetForm() {
-            form.reset();
+            document.getElementById('journalForm').reset();
             document.getElementById('editId').value = '';
             document.getElementById('displayId').value = '';
             document.getElementById('formTitle').innerHTML = '<span class="bg-green-100 p-2 rounded-xl mr-3 text-xl">📝</span> บันทึกเทรดใหม่';
             document.getElementById('submitBtn').textContent = 'บันทึกข้อมูล';
         }
+
+        ['calcBalance', 'calcRisk', 'calcEntry', 'calcSLPoints', 'calcRR', 'calcSide'].forEach(id => {
+            document.getElementById(id).addEventListener('input', calculateLot);
+        });
 
         window.onload = fetchData;
     </script>
