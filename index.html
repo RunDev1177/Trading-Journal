@@ -12,6 +12,7 @@
         .glass-card { background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px); }
         .green-gradient { background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%); }
         .blue-gradient { background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); }
+        .gold-gradient { background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); }
         
         .modal-overlay {
             position: fixed;
@@ -261,10 +262,15 @@
     </div>
 
     <main class="container mx-auto px-4 max-w-4xl">
-        <div id="summarySection" class="grid grid-cols-2 md:grid-cols-7 gap-2 mb-8">
+        <div id="summarySection" class="grid grid-cols-2 md:grid-cols-8 gap-2 mb-8">
             <div class="bg-white p-3 rounded-2xl shadow-sm border border-slate-100 text-center">
                 <p class="text-[9px] font-bold text-slate-400 uppercase mb-1">เทรดทั้งหมด</p>
                 <p id="totalTrades" class="text-xl font-bold text-slate-800">0</p>
+            </div>
+            <!-- ส่วนที่เพิ่มใหม่: Win Rate -->
+            <div class="bg-white p-3 rounded-2xl shadow-sm border border-slate-100 text-center ring-2 ring-amber-100">
+                <p class="text-[9px] font-bold text-amber-600 uppercase mb-1">Win Rate</p>
+                <p id="winRate" class="text-xl font-bold text-amber-600">0%</p>
             </div>
             <div class="bg-white p-3 rounded-2xl shadow-sm border border-slate-100 text-center">
                 <p class="text-[9px] font-bold text-amber-500 uppercase mb-1">รอ</p>
@@ -337,7 +343,6 @@
         }
 
         function calculateLot() {
-            // Inputs
             const balance = parseFloat(document.getElementById('calcBalance').value) || 0;
             const riskPercent = parseFloat(document.getElementById('calcRisk').value) || 0;
             const side = document.getElementById('calcSide').value;
@@ -353,24 +358,14 @@
                 return;
             }
 
-            // --- ตรรกะการหาค่าของ 1 Point ---
-            // หาว่าหลังทศนิยมมีกี่หลัก
             const decimalMatch = entryInput.match(/\.(\d+)/);
             const decimalPlaces = decimalMatch ? decimalMatch[1].length : 0;
             const pointValue = Math.pow(10, -decimalPlaces); 
-            // ตัวอย่าง: ถ้าป้อน 4500.00 -> decimalPlaces = 2 -> pointValue = 0.01
-            // ดังนั้น 500 จุด คือ 500 * 0.01 = 5.00
 
-            // คำนวณระยะ SL ในรูปของราคา (Price Delta)
             const priceDelta = slPoints * pointValue;
-
-            // สูตรหา Lot: (เงินทุน * ความเสี่ยง%) / ระยะ SL point (ที่เทียบเป็นค่าเงินดอลลาร์ต่อ Lot แล้ว)
-            // สำหรับ FX/Gold ส่วนใหญ่ 1 point ระยะห่าง 100 จุดในทองคำคือ $1 ต่อ 0.01 lot
-            // เราใช้สูตรง่ายๆ ที่นิยมคือ Risk Amount / slPoints
             const riskAmount = balance * (riskPercent / 100);
             const lot = riskAmount / slPoints;
 
-            // คำนวณราคา SL/TP
             let slPrice, tpPrice;
             if (side === 'BUY') {
                 slPrice = entryPrice - priceDelta;
@@ -380,18 +375,15 @@
                 tpPrice = entryPrice - (priceDelta * rr);
             }
 
-            // แสดงผล
             document.getElementById('resultLot').textContent = lot.toFixed(2);
             document.getElementById('resultRiskAmount').textContent = `ความเสี่ยง: $${riskAmount.toLocaleString(undefined, {minimumFractionDigits: 2})}`;
             
-            // Format ราคาตามทศนิยมที่ป้อนมา
             const formatPrice = (p) => p.toFixed(decimalPlaces).replace(/\B(?=(\d{3})+(?!\d))/g, ",");
             
             document.getElementById('resultSLPrice').textContent = formatPrice(slPrice);
             document.getElementById('resultTPPrice').textContent = formatPrice(tpPrice);
         }
 
-        // เพิ่ม Event Listeners ให้ Calculator
         ['calcBalance', 'calcRisk', 'calcEntry', 'calcSLPoints', 'calcRR', 'calcSide'].forEach(id => {
             document.getElementById(id).addEventListener('input', calculateLot);
         });
@@ -466,11 +458,21 @@
         }
 
         function updateSummary(data) {
+            const tp = data.filter(i => i.status === 'TP').length;
+            const sl = data.filter(i => i.status === 'SL').length;
+            
+            // คำนวณ Win Rate: TP / (TP + SL)
+            let winRateValue = 0;
+            if (tp + sl > 0) {
+                winRateValue = (tp / (tp + sl)) * 100;
+            }
+
             document.getElementById('totalTrades').textContent = data.length;
+            document.getElementById('winRate').textContent = `${winRateValue.toFixed(1)}%`;
             document.getElementById('pendingTrades').textContent = data.filter(i => i.status === 'Pending').length;
             document.getElementById('runningTrades').textContent = data.filter(i => i.status === 'Running').length;
-            document.getElementById('tpTrades').textContent = data.filter(i => i.status === 'TP').length;
-            document.getElementById('slTrades').textContent = data.filter(i => i.status === 'SL').length;
+            document.getElementById('tpTrades').textContent = tp;
+            document.getElementById('slTrades').textContent = sl;
             document.getElementById('beTrades').textContent = data.filter(i => i.status === 'BreakEven').length;
             document.getElementById('canceledTrades').textContent = data.filter(i => i.status === 'Canceled').length;
         }
