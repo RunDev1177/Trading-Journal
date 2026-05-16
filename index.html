@@ -90,7 +90,7 @@
     <header class="green-gradient text-white py-4 shadow-lg mb-4">
         <div class="container mx-auto px-4 text-center">
             <h1 class="text-3xl font-bold mb-1">📈 Trading Journal</h1>
-            <p class="text-sm opacity-80 uppercase tracking-widest">บันทึกการเทรดเพื่อเป็น Pro Trader</p>
+            <!-- <p class="text-sm opacity-80 uppercase tracking-widest">บันทึกการเทรดเพื่อเป็น Pro Trader</p> -->
         </div>
     </header>
 
@@ -151,7 +151,7 @@
                         </div>
                         <div>
                             <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">RR (Risk:Reward)</label>
-                            <input type="number" step="0.1" id="calcRR" value="2.0" class="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-blue-500 outline-none transition">
+                            <input type="number" step="0.1" id="calcRR" value="1.0" class="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-blue-500 outline-none transition">
                         </div>
                     </div>
                     
@@ -204,8 +204,8 @@
                         <div>
                             <label class="block text-xs font-bold text-slate-400 uppercase mb-1">ประเภท</label>
                             <select id="type" class="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-green-500 outline-none transition bg-white">
-                                <option value="Buy/Long">Buy / Long</option>
-                                <option value="Sell/Short">Sell / Short</option>
+                                <option value="Buy">Buy</option>
+                                <option value="Sell">Sell</option>
                             </select>
                         </div>
                         <div>
@@ -248,9 +248,14 @@
                     </div>
 
                     <div>
-                        <label class="block text-xs font-bold text-slate-400 uppercase mb-1">Link รูปภาพ Chart</label>
-                        <input type="url" id="imgUrl" placeholder="https://..." class="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-green-500 outline-none transition">
-                    </div>
+    <label class="block text-xs font-bold text-slate-400 uppercase mb-1">Link รูปภาพ Chart ก่อนเทรด</label>
+    <input type="url" id="imgUrlBefore" placeholder="https://..." class="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-green-500 outline-none transition">
+</div>
+
+<div>
+    <label class="block text-xs font-bold text-slate-400 uppercase mb-1">Link รูปภาพ Chart หลังเทรด</label>
+    <input type="url" id="imgUrlAfter" placeholder="https://..." class="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-green-500 outline-none transition">
+</div>
 
                     <div class="pt-4 flex gap-3">
                         <button type="submit" id="submitBtn" class="flex-1 green-gradient text-white font-bold py-4 rounded-2xl shadow-lg hover:shadow-green-500/30 transition transform active:scale-95">บันทึกข้อมูล</button>
@@ -324,7 +329,7 @@
     <div id="toast" class="fixed bottom-10 left-1/2 transform -translate-x-1/2 px-8 py-4 rounded-2xl text-white shadow-2xl opacity-0 transition-all duration-300 pointer-events-none z-[3000] font-bold"></div>
 
     <script>
-        const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyiMkG0IhEinTvNlfFs6MntNrEGvRVkajcSdmxWaxgxjbSkYzrpXnG3tVl9cmOrxjld/exec"; 
+        const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxjg-HBNP7KtXivakl0VKZRRakA4hWRYFzRLaxqekO0hqUPRElgpOigQD_lIl5hAt30ZQ/exec"; 
         let currentData = [];
 
         // --- FIXED LOT CALCULATOR LOGIC (WITH SMART POINT COUNTING) ---
@@ -516,11 +521,21 @@
                         <p class="text-[11px] text-slate-400 font-bold mb-1">SETUP / PLAN:</p>
                         <p class="text-sm text-slate-600 line-clamp-2 italic">"${item.setup || '-'}"</p>
                     </div>
-                    ${item.imgUrl ? `
-                        <div class="mb-4 rounded-2xl overflow-hidden border border-slate-100">
-                            <img src="${item.imgUrl}" alt="Chart" class="w-full h-32 object-cover" onerror="this.parentElement.style.display='none'">
-                        </div>
-                    ` : ''}
+                    <div class="grid grid-cols-2 gap-2 mb-4">
+    ${item.imgUrlBefore ? `
+        <div class="rounded-2xl overflow-hidden border border-slate-100">
+            <p class="text-[9px] bg-slate-100 px-2 py-1 text-slate-500 uppercase font-bold text-center">Before</p>
+            <img src="${item.imgUrlBefore}" alt="Before" class="w-full h-32 object-cover" onerror="this.parentElement.style.display='none'">
+        </div>
+    ` : '<div></div>'}
+
+    ${item.imgUrlAfter ? `
+        <div class="rounded-2xl overflow-hidden border border-slate-100">
+            <p class="text-[9px] bg-slate-100 px-2 py-1 text-slate-500 uppercase font-bold text-center">After</p>
+            <img src="${item.imgUrlAfter}" alt="After" class="w-full h-32 object-cover" onerror="this.parentElement.style.display='none'">
+        </div>
+    ` : '<div></div>'}
+</div>
                     <div class="flex gap-2 border-t border-slate-50 pt-3">
                         <button onclick="prepareEdit('${item.id}')" class="flex-1 py-2 rounded-xl text-xs font-bold text-blue-600 bg-blue-50 hover:bg-blue-100 transition">แก้ไข</button>
                         <button onclick="deleteEntry('${item.id}')" class="flex-1 py-2 rounded-xl text-xs font-bold text-red-400 hover:text-red-600 hover:bg-red-50 transition">ลบ</button>
@@ -547,7 +562,8 @@
             document.getElementById('setup').value = item.setup || '';
             document.getElementById('status').value = item.status || 'Pending';
             document.getElementById('emotion').value = item.emotion || '🧘 นิ่งตามแผน';
-            document.getElementById('imgUrl').value = item.imgUrl || '';
+            document.getElementById('imgUrlBefore').value = item.imgUrlBefore || ''; 
+            document.getElementById('imgUrlAfter').value = item.imgUrlAfter || '';
             document.getElementById('formTitle').innerHTML = '<span class="bg-blue-100 p-2 rounded-xl mr-3 text-xl">✏️</span> แก้ไขรายการ';
             document.getElementById('submitBtn').textContent = 'อัปเดตข้อมูล';
         }
@@ -567,7 +583,8 @@
                 setup: document.getElementById('setup').value,
                 status: document.getElementById('status').value,
                 emotion: document.getElementById('emotion').value,
-                imgUrl: document.getElementById('imgUrl').value
+                imgUrlBefore: document.getElementById('imgUrlBefore').value, // ปรับชื่อให้ตรงกับ ID ใหม่
+                imgUrlAfter: document.getElementById('imgUrlAfter').value   // เพิ่มฟิลด์รูปหลังเทรด
             };
             const btn = document.getElementById('submitBtn');
             btn.disabled = true;
