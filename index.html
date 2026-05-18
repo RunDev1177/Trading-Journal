@@ -90,7 +90,7 @@
     <header class="green-gradient text-white py-4 shadow-lg mb-4">
         <div class="container mx-auto px-4 text-center">
             <h1 class="text-3xl font-bold mb-1">📈 Trading Journal</h1>
-            <!-- <p class="text-sm opacity-80 uppercase tracking-widest">บันทึกการเทรดเพื่อเป็น Pro Trader</p> -->
+            <p class="text-sm opacity-80 uppercase tracking-widest">บันทึกการเทรดเพื่อเป็น Pro Trader</p>
         </div>
     </header>
 
@@ -151,7 +151,7 @@
                         </div>
                         <div>
                             <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">RR (Risk:Reward)</label>
-                            <input type="number" step="0.1" id="calcRR" value="1.0" class="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-blue-500 outline-none transition">
+                            <input type="number" step="0.1" id="calcRR" value="2.0" class="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-blue-500 outline-none transition">
                         </div>
                     </div>
                     
@@ -248,14 +248,14 @@
                     </div>
 
                     <div>
-    <label class="block text-xs font-bold text-slate-400 uppercase mb-1">Link รูปภาพ Chart ก่อนเทรด</label>
-    <input type="url" id="imgUrlBefore" placeholder="https://..." class="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-green-500 outline-none transition">
-</div>
+                        <label class="block text-xs font-bold text-slate-400 uppercase mb-1">Link รูปภาพ Chart ก่อนเทรด</label>
+                        <input type="url" id="imgUrlBefore" placeholder="https://..." class="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-green-500 outline-none transition">
+                    </div>
 
-<div>
-    <label class="block text-xs font-bold text-slate-400 uppercase mb-1">Link รูปภาพ Chart หลังเทรด</label>
-    <input type="url" id="imgUrlAfter" placeholder="https://..." class="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-green-500 outline-none transition">
-</div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-400 uppercase mb-1">Link รูปภาพ Chart หลังเทรด</label>
+                        <input type="url" id="imgUrlAfter" placeholder="https://..." class="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-green-500 outline-none transition">
+                    </div>
 
                     <div class="pt-4 flex gap-3">
                         <button type="submit" id="submitBtn" class="flex-1 green-gradient text-white font-bold py-4 rounded-2xl shadow-lg hover:shadow-green-500/30 transition transform active:scale-95">บันทึกข้อมูล</button>
@@ -267,12 +267,12 @@
     </div>
 
     <main class="container mx-auto px-4 max-w-4xl">
+        <!-- Dashboard Summary (ข้อมูลจะแสดงผลตามที่เลือกในตัวกรอง) -->
         <div id="summarySection" class="grid grid-cols-2 md:grid-cols-8 gap-2 mb-8">
             <div class="bg-white p-3 rounded-2xl shadow-sm border border-slate-100 text-center">
                 <p class="text-[9px] font-bold text-slate-400 uppercase mb-1">เทรดทั้งหมด</p>
                 <p id="totalTrades" class="text-xl font-bold text-slate-800">0</p>
             </div>
-            <!-- ส่วนที่เพิ่มใหม่: Win Rate -->
             <div class="bg-white p-3 rounded-2xl shadow-sm border border-slate-100 text-center ring-2 ring-amber-100">
                 <p class="text-[9px] font-bold text-amber-600 uppercase mb-1">Win Rate</p>
                 <p id="winRate" class="text-xl font-bold text-amber-600">0%</p>
@@ -303,14 +303,39 @@
             </div>
         </div>
 
-        <div class="flex justify-between items-center mb-6">
+        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
             <h2 class="text-2xl font-bold text-slate-800 flex items-center">
                 <span class="mr-3">📊</span> ประวัติการเทรด
             </h2>
-            <button onclick="fetchData()" class="bg-white border border-slate-200 text-slate-600 px-4 py-2 rounded-xl hover:bg-slate-50 transition text-sm flex items-center shadow-sm">
-                <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
-                รีเฟรช
-            </button>
+            
+            <!-- ส่วนตัวกรองช่วงเวลา (Time Filter Dropdown) และปุ่มรีเฟรช -->
+            <div class="flex flex-wrap items-center gap-3 w-full sm:w-auto">
+                <!-- ส่วนกล่องระบุวันที่ด้วยตนเอง (แสดงผลเมื่อเลือก 'custom') -->
+                <div id="customDateContainer" class="hidden flex items-center gap-2 bg-white px-3 py-1.5 border border-slate-200 rounded-xl shadow-sm w-full sm:w-auto">
+                    <input type="date" id="filterStartDate" onchange="filterDataByTime()" class="bg-transparent border-none text-slate-700 text-sm focus:outline-none w-full sm:w-auto cursor-pointer">
+                    <span class="text-xs text-slate-400 font-bold">ถึง</span>
+                    <input type="date" id="filterEndDate" onchange="filterDataByTime()" class="bg-transparent border-none text-slate-700 text-sm focus:outline-none w-full sm:w-auto cursor-pointer">
+                </div>
+
+                <div class="relative flex-1 sm:flex-initial min-w-[150px]">
+                    <select id="timeFilter" onchange="filterDataByTime()" class="w-full sm:w-auto pl-4 pr-10 py-2.5 bg-white border border-slate-200 text-slate-700 text-sm font-medium rounded-xl focus:outline-none focus:border-green-500 transition shadow-sm appearance-none cursor-pointer">
+                        <option value="all">📅 แสดงทั้งหมด</option>
+                        <option value="today">☀️ วันนี้</option>
+                        <option value="week" selected>📅 สัปดาห์นี้</option>
+                        <option value="month">🌙 เดือนนี้</option>
+                        <option value="3months">📦 3 เดือนล่าสุด</option>
+                        <option value="custom">📅 ระบุวันที่เอง</option>
+                    </select>
+                    <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-slate-400">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                    </div>
+                </div>
+                
+                <button onclick="fetchData()" class="bg-white border border-slate-200 text-slate-600 px-4 py-2.5 rounded-xl hover:bg-slate-50 transition text-sm flex items-center shadow-sm">
+                    <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+                    รีเฟรช
+                </button>
+            </div>
         </div>
 
         <div id="loading" class="hidden text-center py-20">
@@ -448,8 +473,7 @@
                 document.getElementById('loading').classList.add('hidden');
                 if (data && data.length > 0) {
                     currentData = data;
-                    updateSummary(data);
-                    renderJournal(data);
+                    filterDataByTime(); // กรองข้อมูลตามค่า Dropdown ปัจจุบัน
                 } else {
                     currentData = [];
                     updateSummary([]);
@@ -459,6 +483,100 @@
                 document.getElementById('loading').classList.add('hidden');
                 document.getElementById('noData').classList.remove('hidden');
                 showToast('โหลดข้อมูลล้มเหลว', 'bg-red-500');
+            }
+        }
+
+        // --- TIME FILTER LOGIC ---
+        function filterDataByTime() {
+            const filterType = document.getElementById('timeFilter').value;
+            const customDateContainer = document.getElementById('customDateContainer');
+            
+            if (!currentData || currentData.length === 0) {
+                updateSummary([]);
+                document.getElementById('noData').classList.remove('hidden');
+                return;
+            }
+
+            const now = new Date();
+            let filtered = [];
+
+            if (filterType === 'all') {
+                customDateContainer.classList.add('hidden');
+                filtered = [...currentData];
+            } else if (filterType === 'custom') {
+                customDateContainer.classList.remove('hidden');
+                
+                const startVal = document.getElementById('filterStartDate').value;
+                const endVal = document.getElementById('filterEndDate').value;
+                
+                filtered = currentData.filter(item => {
+                    if (!item.datetime) return false;
+                    const itemDate = new Date(item.datetime);
+                    
+                    // หากกรอกแต่วันที่เริ่มต้น
+                    if (startVal && !endVal) {
+                        const startDate = new Date(startVal);
+                        startDate.setHours(0, 0, 0, 0);
+                        return itemDate >= startDate;
+                    }
+                    // หากกรอกแต่วันที่สิ้นสุด
+                    else if (!startVal && endVal) {
+                        const endDate = new Date(endVal);
+                        endDate.setHours(23, 59, 59, 999);
+                        return itemDate <= endDate;
+                    }
+                    // หากกรอกทั้งสองช่วง
+                    else if (startVal && endVal) {
+                        const startDate = new Date(startVal);
+                        startDate.setHours(0, 0, 0, 0);
+                        const endDate = new Date(endVal);
+                        endDate.setHours(23, 59, 59, 999);
+                        return itemDate >= startDate && itemDate <= endDate;
+                    }
+                    // หากยังไม่ได้กรอกเลย ให้แสดงรายการทั้งหมดไว้ก่อน
+                    return true;
+                });
+            } else {
+                customDateContainer.classList.add('hidden');
+                filtered = currentData.filter(item => {
+                    if (!item.datetime) return false;
+                    const itemDate = new Date(item.datetime);
+                    
+                    // เซ็ตเวลาให้เริ่มที่ 00:00:00 เพื่อเทียบแค่วันที่ในบางกรณี
+                    const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+
+                    switch(filterType) {
+                        case 'today':
+                            return itemDate >= startOfToday;
+                            
+                        case 'week':
+                            const currentDay = now.getDay();
+                            const startOfWeek = new Date(startOfToday);
+                            startOfWeek.setDate(startOfToday.getDate() - currentDay);
+                            return itemDate >= startOfWeek;
+                            
+                        case 'month':
+                            const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+                            return itemDate >= startOfMonth;
+                            
+                        case '3months':
+                            const startOf3MonthsAgo = new Date(now.getFullYear(), now.getMonth() - 3, now.getDate());
+                            return itemDate >= startOf3MonthsAgo;
+                            
+                        default:
+                            return true;
+                    }
+                });
+            }
+
+            updateSummary(filtered);
+
+            if (filtered.length > 0) {
+                document.getElementById('noData').classList.add('hidden');
+                renderJournal(filtered);
+            } else {
+                document.getElementById('journalContainer').innerHTML = '';
+                document.getElementById('noData').classList.remove('hidden');
             }
         }
 
@@ -522,20 +640,20 @@
                         <p class="text-sm text-slate-600 line-clamp-2 italic">"${item.setup || '-'}"</p>
                     </div>
                     <div class="grid grid-cols-2 gap-2 mb-4">
-    ${item.imgUrlBefore ? `
-        <div class="rounded-2xl overflow-hidden border border-slate-100">
-            <p class="text-[9px] bg-slate-100 px-2 py-1 text-slate-500 uppercase font-bold text-center">Before</p>
-            <img src="${item.imgUrlBefore}" alt="Before" class="w-full h-32 object-cover" onerror="this.parentElement.style.display='none'">
-        </div>
-    ` : '<div></div>'}
+                        ${item.imgUrlBefore ? `
+                            <div class="rounded-2xl overflow-hidden border border-slate-100">
+                                <p class="text-[9px] bg-slate-100 px-2 py-1 text-slate-500 uppercase font-bold text-center">ก่อนเทรด</p>
+                                <img src="${item.imgUrlBefore}" alt="Before" class="w-full h-32 object-cover" onerror="this.parentElement.style.display='none'">
+                            </div>
+                        ` : '<div></div>'}
 
-    ${item.imgUrlAfter ? `
-        <div class="rounded-2xl overflow-hidden border border-slate-100">
-            <p class="text-[9px] bg-slate-100 px-2 py-1 text-slate-500 uppercase font-bold text-center">After</p>
-            <img src="${item.imgUrlAfter}" alt="After" class="w-full h-32 object-cover" onerror="this.parentElement.style.display='none'">
-        </div>
-    ` : '<div></div>'}
-</div>
+                        ${item.imgUrlAfter ? `
+                            <div class="rounded-2xl overflow-hidden border border-slate-100">
+                                <p class="text-[9px] bg-slate-100 px-2 py-1 text-slate-500 uppercase font-bold text-center">หลังเทรด</p>
+                                <img src="${item.imgUrlAfter}" alt="After" class="w-full h-32 object-cover" onerror="this.parentElement.style.display='none'">
+                            </div>
+                        ` : '<div></div>'}
+                    </div>
                     <div class="flex gap-2 border-t border-slate-50 pt-3">
                         <button onclick="prepareEdit('${item.id}')" class="flex-1 py-2 rounded-xl text-xs font-bold text-blue-600 bg-blue-50 hover:bg-blue-100 transition">แก้ไข</button>
                         <button onclick="deleteEntry('${item.id}')" class="flex-1 py-2 rounded-xl text-xs font-bold text-red-400 hover:text-red-600 hover:bg-red-50 transition">ลบ</button>
@@ -583,8 +701,8 @@
                 setup: document.getElementById('setup').value,
                 status: document.getElementById('status').value,
                 emotion: document.getElementById('emotion').value,
-                imgUrlBefore: document.getElementById('imgUrlBefore').value, // ปรับชื่อให้ตรงกับ ID ใหม่
-                imgUrlAfter: document.getElementById('imgUrlAfter').value   // เพิ่มฟิลด์รูปหลังเทรด
+                imgUrlBefore: document.getElementById('imgUrlBefore').value,
+                imgUrlAfter: document.getElementById('imgUrlAfter').value
             };
             const btn = document.getElementById('submitBtn');
             btn.disabled = true;
